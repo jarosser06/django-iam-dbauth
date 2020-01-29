@@ -8,7 +8,7 @@ from django_iam_dbauth.utils import resolve_cname
 
 class DatabaseWrapper(base.DatabaseWrapper):
     def get_connection_params(self):
-        params = super().get_connection_params()
+        params = super(DatabaseWrapper, self).get_connection_params()
         enabled = params.pop('use_iam_auth', None)
         if enabled:
             rds_client = boto3.client("rds")
