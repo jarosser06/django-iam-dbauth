@@ -10,15 +10,24 @@ class DatabaseWrapper(base.DatabaseWrapper):
         params = super(DatabaseWrapper, self).get_connection_params()
         enabled = params.pop('use_iam_auth', None)
         if enabled:
-            rds_client = boto3.client("rds")
+            aws_region = params.pop('aws_region', None)
+            client_args = {}
+            if aws_region:
+                client_args = {'region_name': aws_region}
+
+            rds_client = boto3.client("rds", **client_args)
 
             hostname = params.get('host')
             hostname = resolve_cname(hostname) if hostname else "localhost"
 
-            params["password"] = rds_client.generate_db_auth_token(
-                DBHostname=hostname,
-                Port=params.get("port", 5432),
-                DBUsername=params.get("user") or getpass.getuser(),
-            )
+            args = {
+                'DBHostname': hostname,
+                'Port': params.get("port", 5432),
+                'DBUsername': params.get("user") or getpass.getuser(),
+            }
+
+            if aws_region:
+                args['Region'] = aws_region
+            params["password"] = rds_client.generate_db_auth_token(**args)
 
         return params
